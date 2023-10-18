@@ -13,7 +13,7 @@ Also playing around with type hints and type aliases: this script passes mypy.
 from typing import Optional, Union
 
 Operator = str
-Number = int
+Number = float
 Token = Union[Operator, Number]
 
 
@@ -111,3 +111,4 @@ assert calc("5 + 4 * 3 / 2 - 1") == 10
 assert calc("1 * 2 * 3 * 4") == 24
 assert calc("1 * 2 * 3 * 4 / 2") == 12
 assert calc("1 + 2 * 10") == 21
+assert calc("1.5 + 1 / 2") == 2
