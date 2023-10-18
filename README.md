@@ -1,1 +1,1 @@
-Occasional code excercises to keep me sharp I guess.
+Occasional code exercises to keep me sharp I guess.
