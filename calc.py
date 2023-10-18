@@ -7,10 +7,10 @@ Grammar, in order of ascending priority:
     term -> factor ( ("+" | "-") factor )*
     factor -> NUMBER ( ("*" | "/") NUMBER )*
 
-Also playing around with type hints and type aliases.
+Also playing around with type hints and type aliases: this script passes mypy.
 """
 
-from typing import Union
+from typing import Optional, Union
 
 Operator = str
 Number = int
@@ -18,7 +18,7 @@ Token = Union[Operator, Number]
 
 
 class BinaryExpr:
-    def __init__(self, left, operator, right):
+    def __init__(self, left, operator, right) -> None:
         self.left: Expr = left
         self.operator: Operator = operator
         self.right: Expr = right
@@ -30,14 +30,14 @@ OPERATORS = {"+", "-", "*", "/"}
 
 
 def lex(expression: str) -> list[Token]:
-    tokens = []
+    tokens: list[Token] = []
 
     for text in expression.split():
         text = text.strip()
         if text in OPERATORS:
             tokens.append(text)
         else:
-            tokens.append(int(text))
+            tokens.append(Number(text))
 
     return tokens
 
@@ -45,34 +45,32 @@ def lex(expression: str) -> list[Token]:
 def parse(tokens: list[Token]) -> Expr:
     current_index = 0
 
-    def parse_term():
+    def parse_term() -> Expr:
         expr: Expr = parse_factor()
-        while operator := match("+", "-"):
+        while operator := match_operator("+", "-"):
             right: Expr = parse_factor()
             expr = BinaryExpr(expr, operator, right)
         return expr
 
-    def parse_factor():
+    def parse_factor() -> Expr:
         nonlocal current_index
-        expr: Expr = tokens[current_index]
-        current_index += 1
-        while operator := match("*", "/"):
-            right: Expr = tokens[current_index]
-            current_index += 1
+        expr: Expr = match_number()
+        while operator := match_operator("*", "/"):
+            right: Expr = match_number()
             expr = BinaryExpr(expr, operator, right)
         return expr
 
-    def match(*matches):
+    def match_operator(*operators: Operator) -> Optional[Token]:
         nonlocal current_index
         if current_index >= len(tokens):
             return None
 
-        if (tok := tokens[current_index]) in matches:
+        if (tok := tokens[current_index]) in operators:
             current_index += 1
             return tok
         return None
 
-    def match_number():
+    def match_number() -> Number:
         nonlocal current_index
         tok = tokens[current_index]
         assert isinstance(tok, Number)
@@ -82,9 +80,9 @@ def parse(tokens: list[Token]) -> Expr:
     return parse_term()
 
 
-def evaluate(expr: Expr) -> int:
+def evaluate(expr: Expr) -> Number:
     if isinstance(expr, Number):
-        return int(expr)
+        return Number(expr)
 
     if expr.operator == "+":
         return evaluate(expr.left) + evaluate(expr.right)
@@ -96,12 +94,12 @@ def evaluate(expr: Expr) -> int:
         return evaluate(expr.left) * evaluate(expr.right)
 
     if expr.operator == "/":
-        return evaluate(expr.left) / evaluate(expr.right)
+        return Number(evaluate(expr.left) / evaluate(expr.right))
 
     raise Exception("Invalid expression:", expr)
 
 
-def calc(input_str):
+def calc(input_str) -> Number:
     tokens = lex(input_str)
     expr = parse(tokens)
     result = evaluate(expr)
