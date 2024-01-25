@@ -1,53 +1,88 @@
 // Simplest possible stuff to get me some muscle memory for zig syntax.
 
 const std = @import("std");
+const ArrayList = std.ArrayList;
+const allocator = std.heap.page_allocator;
 
-pub fn main() void {
-    var array = [_]i64{ 12, 1, -1, 4, 100, 40, 3, 2 };
-    std.debug.print("{any} <-- before\n", .{array});
-    bubble_sort(&array);
-    //quicksort(&array);
-    std.debug.print("{any} <-- after\n", .{array});
+pub fn main() !void {
+    var list = ArrayList(i64).init(allocator);
+    defer list.deinit();
+    try list.appendSlice(&[_]i64{ 12, 1, -1, 4, 100, 40, 3, 2 });
+
+    std.debug.print("{any} <-- before\n", .{list.items});
+    //bubbleSort(list);
+    list = try quickSort(list);
+    std.debug.print("{any} <-- after\n", .{list.items});
 }
 
-fn bubble_sort(slice: []i64) void {
-    while (!is_sorted(slice)) {
-        for (0..slice.len - 1) |i| {
-            if (slice[i] > slice[i + 1]) {
-                swap(slice, i, i + 1);
+fn bubbleSort(list: ArrayList(i64)) void {
+    while (!isSorted(list)) {
+        for (0..list.items.len - 1) |i| {
+            if (list.items[i] > list.items[i + 1]) {
+                swap(list.items, i, i + 1);
             }
         }
-        std.debug.print("{any}\n", .{slice});
+        std.debug.print("{any}\n", .{list.items});
     }
 }
 
-fn quicksort(slice: []i64) void {
-    std.debug.print(">> {any}\n", .{slice});
+fn quickSort(list: ArrayList(i64)) !ArrayList(i64) {
+    std.debug.print(">> {any}\n", .{list.items});
 
-    switch (slice.len) {
-        1 => {},
-        2 => if (slice[0] > slice[1]) {
-            swap(slice, 0, 1);
+    switch (list.items.len) {
+        1 => return list,
+        2 => {
+            if (list.items[0] > list.items[1]) {
+                swap(list.items, 0, 1);
+            }
+            return list;
         },
         else => {
-            var pivot = slice.len / 2;
-            var pivot_val = slice[pivot];
+            var pivot = list.items.len / 2;
+            var pivot_val = list.items[pivot];
             std.debug.print("pivot: {any} ({d})\n", .{ pivot, pivot_val });
-            swap(slice, pivot, slice.len - 1);
 
-            //var left: usize = 0;
-            //var right: usize = slice.len - 2;
-            // TODO
+            var left = ArrayList(i64).init(allocator);
+            defer left.deinit();
 
-            swap(slice, pivot, slice.len - 1);
+            var right = ArrayList(i64).init(allocator);
+            defer right.deinit();
 
-            quicksort(slice[0..pivot]);
-            quicksort(slice[pivot + 1 ..]);
+            for (0.., list.items) |i, item| {
+                if (i == pivot) {
+                    continue;
+                }
+                std.debug.print("item: {any}, pivot_val: {any}\n", .{ item, pivot_val });
+                if (item <= pivot_val) {
+                    try left.append(item);
+                } else {
+                    try right.append(item);
+                }
+            }
+
+            std.debug.print("left: {any}\n", .{left.items});
+            std.debug.print("right: {any}\n", .{right.items});
+
+            var list_after = ArrayList(i64).init(allocator);
+
+            if (left.items.len > 0) {
+                var left_after = try quickSort(left);
+                try list_after.appendSlice(left_after.items);
+            }
+
+            try list_after.append(pivot_val);
+
+            if (right.items.len > 0) {
+                var right_after = try quickSort(right);
+                try list_after.appendSlice(right_after.items);
+            }
+            return list_after;
         },
     }
 }
 
-fn is_sorted(slice: []i64) bool {
+fn isSorted(list: ArrayList(i64)) bool {
+    var slice = list.items;
     for (0..slice.len - 1) |i| {
         if (slice[i] > slice[i + 1]) {
             return false;
