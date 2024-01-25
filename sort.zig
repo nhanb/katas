@@ -4,8 +4,8 @@ const std = @import("std");
 const ArrayList = std.ArrayList;
 const eql = std.mem.eql;
 const expect = std.testing.expect;
-//const allocator = std.testing.allocator;
-const allocator = std.heap.page_allocator;
+const allocator = std.testing.allocator;
+//const allocator = std.heap.page_allocator;
 
 test "bubbleSort" {
     var list = ArrayList(i64).init(allocator);
@@ -29,9 +29,10 @@ fn bubbleSort(list: ArrayList(i64)) void {
 test "quickSort" {
     var list = ArrayList(i64).init(allocator);
     defer list.deinit();
-    try list.appendSlice(&[_]i64{ 12, 1, -1, 4, 100, 40, 3, 2 });
-    list = try quickSort(list);
-    try expect(eql(i64, list.items, &[_]i64{ -1, 1, 2, 3, 4, 12, 40, 100 }));
+    try list.appendSlice(&[_]i64{ 12, 1, -1, 4, 100, 40, 2, 2 });
+    var list2 = try quickSort(list);
+    defer list2.deinit();
+    try expect(eql(i64, list.items, &[_]i64{ -1, 1, 2, 2, 4, 12, 40, 100 }));
 }
 
 fn quickSort(list: ArrayList(i64)) !ArrayList(i64) {
@@ -71,6 +72,7 @@ fn quickSort(list: ArrayList(i64)) !ArrayList(i64) {
             if (left.items.len > 0) {
                 var left_after = try quickSort(left);
                 try list_after.appendSlice(left_after.items);
+                //left_after.deinit();
             }
 
             try list_after.append(pivot_val);
@@ -78,6 +80,7 @@ fn quickSort(list: ArrayList(i64)) !ArrayList(i64) {
             if (right.items.len > 0) {
                 var right_after = try quickSort(right);
                 try list_after.appendSlice(right_after.items);
+                //right_after.deinit();
             }
             return list_after;
         },
