@@ -4,11 +4,9 @@ const std = @import("std");
 const ArrayList = std.ArrayList;
 const eql = std.mem.eql;
 const expect = std.testing.expect;
-const allocator = std.testing.allocator;
-//const allocator = std.heap.page_allocator;
 
 test "bubbleSort" {
-    var list = ArrayList(i64).init(allocator);
+    var list = ArrayList(i64).init(std.testing.allocator);
     defer list.deinit();
     try list.appendSlice(&[_]i64{ 12, 1, -1, 4, 100, 40, 3, 2 });
     bubbleSort(list);
@@ -27,15 +25,17 @@ fn bubbleSort(list: ArrayList(i64)) void {
 }
 
 test "quickSort" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
     var list = ArrayList(i64).init(allocator);
-    defer list.deinit();
     try list.appendSlice(&[_]i64{ 12, 1, -1, 4, 100, 40, 2, 2 });
-    var list2 = try quickSort(list);
-    defer list2.deinit();
-    try expect(eql(i64, list.items, &[_]i64{ -1, 1, 2, 2, 4, 12, 40, 100 }));
+    var list2 = try quickSort(allocator, list);
+    try expect(eql(i64, list2.items, &[_]i64{ -1, 1, 2, 2, 4, 12, 40, 100 }));
 }
 
-fn quickSort(list: ArrayList(i64)) !ArrayList(i64) {
+fn quickSort(allocator: std.mem.Allocator, list: ArrayList(i64)) !ArrayList(i64) {
     //std.debug.print(">> {any}\n", .{list.items});
 
     switch (list.items.len) {
@@ -51,10 +51,7 @@ fn quickSort(list: ArrayList(i64)) !ArrayList(i64) {
             var pivot_val = list.items[pivot];
 
             var left = ArrayList(i64).init(allocator);
-            defer left.deinit();
-
             var right = ArrayList(i64).init(allocator);
-            defer right.deinit();
 
             for (0.., list.items) |i, item| {
                 if (i == pivot) {
@@ -70,17 +67,15 @@ fn quickSort(list: ArrayList(i64)) !ArrayList(i64) {
             var list_after = ArrayList(i64).init(allocator);
 
             if (left.items.len > 0) {
-                var left_after = try quickSort(left);
+                var left_after = try quickSort(allocator, left);
                 try list_after.appendSlice(left_after.items);
-                //left_after.deinit();
             }
 
             try list_after.append(pivot_val);
 
             if (right.items.len > 0) {
-                var right_after = try quickSort(right);
+                var right_after = try quickSort(allocator, right);
                 try list_after.appendSlice(right_after.items);
-                //right_after.deinit();
             }
             return list_after;
         },
