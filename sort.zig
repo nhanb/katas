@@ -2,17 +2,17 @@
 
 const std = @import("std");
 const ArrayList = std.ArrayList;
+const eql = std.mem.eql;
+const expect = std.testing.expect;
+//const allocator = std.testing.allocator;
 const allocator = std.heap.page_allocator;
 
-pub fn main() !void {
+test "bubbleSort" {
     var list = ArrayList(i64).init(allocator);
     defer list.deinit();
     try list.appendSlice(&[_]i64{ 12, 1, -1, 4, 100, 40, 3, 2 });
-
-    std.debug.print("{any} <-- before\n", .{list.items});
-    //bubbleSort(list);
-    list = try quickSort(list);
-    std.debug.print("{any} <-- after\n", .{list.items});
+    bubbleSort(list);
+    try expect(eql(i64, list.items, &[_]i64{ -1, 1, 2, 3, 4, 12, 40, 100 }));
 }
 
 fn bubbleSort(list: ArrayList(i64)) void {
@@ -22,12 +22,20 @@ fn bubbleSort(list: ArrayList(i64)) void {
                 swap(list.items, i, i + 1);
             }
         }
-        std.debug.print("{any}\n", .{list.items});
+        //std.debug.print("{any}\n", .{list.items});
     }
 }
 
+test "quickSort" {
+    var list = ArrayList(i64).init(allocator);
+    defer list.deinit();
+    try list.appendSlice(&[_]i64{ 12, 1, -1, 4, 100, 40, 3, 2 });
+    list = try quickSort(list);
+    try expect(eql(i64, list.items, &[_]i64{ -1, 1, 2, 3, 4, 12, 40, 100 }));
+}
+
 fn quickSort(list: ArrayList(i64)) !ArrayList(i64) {
-    std.debug.print(">> {any}\n", .{list.items});
+    //std.debug.print(">> {any}\n", .{list.items});
 
     switch (list.items.len) {
         1 => return list,
@@ -40,7 +48,6 @@ fn quickSort(list: ArrayList(i64)) !ArrayList(i64) {
         else => {
             var pivot = list.items.len / 2;
             var pivot_val = list.items[pivot];
-            std.debug.print("pivot: {any} ({d})\n", .{ pivot, pivot_val });
 
             var left = ArrayList(i64).init(allocator);
             defer left.deinit();
@@ -52,16 +59,12 @@ fn quickSort(list: ArrayList(i64)) !ArrayList(i64) {
                 if (i == pivot) {
                     continue;
                 }
-                std.debug.print("item: {any}, pivot_val: {any}\n", .{ item, pivot_val });
                 if (item <= pivot_val) {
                     try left.append(item);
                 } else {
                     try right.append(item);
                 }
             }
-
-            std.debug.print("left: {any}\n", .{left.items});
-            std.debug.print("right: {any}\n", .{right.items});
 
             var list_after = ArrayList(i64).init(allocator);
 
